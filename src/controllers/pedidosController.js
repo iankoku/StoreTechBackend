@@ -3,14 +3,26 @@ import { AppError, asyncHandler } from '../utils/errorHandler.js';
 
 /**
  * Obtener todos los pedidos
+ * - Admin, gerente y empleado: ven todos
+ * - Proveedor: solo ve los pedidos donde él es el proveedor
  */
 export const getPedidos = asyncHandler(async (req, res) => {
-  const [pedidos] = await db.query(
-    `SELECT p.*, u.nombre as proveedor_nombre, u.email as proveedor_email
-     FROM pedidos p
-     INNER JOIN usuarios u ON p.proveedor_id = u.id
-     ORDER BY p.fecha DESC`
-  );
+  let query = `
+    SELECT p.*, u.nombre as proveedor_nombre, u.email as proveedor_email
+    FROM pedidos p
+    INNER JOIN usuarios u ON p.proveedor_id = u.id
+  `;
+  const params = [];
+
+  // Si el usuario es proveedor, filtramos solo sus pedidos
+  if (req.user.rol === 'proveedor') {
+    query += ` WHERE p.proveedor_id = ?`;
+    params.push(req.user.id);
+  }
+
+  query += ` ORDER BY p.fecha DESC`;
+
+  const [pedidos] = await db.query(query, params);
 
   res.json({
     success: true,
@@ -21,6 +33,8 @@ export const getPedidos = asyncHandler(async (req, res) => {
 
 /**
  * Obtener pedido por ID con sus detalles
+ * - Admin, gerente y empleado: pueden ver cualquier pedido
+ * - Proveedor: solo puede ver el pedido si él es el proveedor
  */
 export const getPedidoById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -37,9 +51,16 @@ export const getPedidoById = asyncHandler(async (req, res) => {
     throw new AppError('Pedido no encontrado', 404);
   }
 
+  const pedido = pedidos[0];
+
+  // Seguridad adicional: el proveedor solo puede ver sus propios pedidos
+  if (req.user.rol === 'proveedor' && pedido.proveedor_id !== req.user.id) {
+    throw new AppError('Acceso denegado: este pedido no pertenece a tu cuenta', 403);
+  }
+
   res.json({
     success: true,
-    data: pedidos[0]
+    data: pedido
   });
 });
 

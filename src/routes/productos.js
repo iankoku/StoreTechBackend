@@ -11,28 +11,19 @@ import { verifyToken, authorizeRoles } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// Todas las rutas requieren autenticación
+// 1. Todas las rutas requieren login
 router.use(verifyToken);
 
-// GET /api/productos - Obtener todos los productos
-router.get('/', getProductos);
+// 2. LECTURA: todos pueden ver productos (incluido proveedor)
+router.get('/', authorizeRoles(['admin', 'gerente', 'empleado', 'proveedor']), getProductos);
+router.get('/:id', authorizeRoles(['admin', 'gerente', 'empleado', 'proveedor']), getProductoById);
 
-// GET /api/productos/:id - Obtener producto por ID
-router.get('/:id', getProductoById);
+// 3. ESCRITURA: solo admin, gerente y empleado
+router.use(authorizeRoles(['admin', 'gerente', 'empleado']));
 
-// Rutas que requieren ser admin o gerente
-router.use(authorizeRoles('admin', 'gerente', 'empleado'));
-
-// POST /api/productos - Crear nuevo producto
 router.post('/', createProducto);
-
-// PUT /api/productos/:id - Actualizar producto
 router.put('/:id', updateProducto);
-
-// PUT /api/productos/:id/stock - Actualizar stock
 router.put('/:id/stock', updateStock);
-
-// DELETE /api/productos/:id - Eliminar producto
 router.delete('/:id', deleteProducto);
 
 export default router;
