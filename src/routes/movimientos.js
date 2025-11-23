@@ -11,18 +11,13 @@ const router = express.Router();
 
 // Todas las rutas requieren autenticación
 router.use(verifyToken);
-router.use(authorizeRoles('admin', 'gerente', 'empleado'));
 
-// GET /api/movimientos - Obtener todos los movimientos (con filtros)
-router.get('/', getMovimientos);
+// Rutas de solo lectura: permitidas para proveedor
+router.get('/', authorizeRoles('admin', 'gerente', 'empleado', 'proveedor'), getMovimientos);
+router.get('/stats', authorizeRoles('admin', 'gerente', 'empleado', 'proveedor'), getEstadisticas);
+router.get('/:id', authorizeRoles('admin', 'gerente', 'empleado', 'proveedor'), getMovimientoById);
 
-// GET /api/movimientos/stats - Estadísticas de movimientos
-router.get('/stats', getEstadisticas);
-
-// GET /api/movimientos/:id - Obtener movimiento por ID
-router.get('/:id', getMovimientoById);
-
-// POST /api/movimientos - Crear movimiento manual
-router.post('/', createMovimiento);
+// Ruta de escritura: SOLO admin, gerente y empleado (proveedor NO puede crear)
+router.post('/', authorizeRoles('admin', 'gerente', 'empleado'), createMovimiento);
 
 export default router;
