@@ -11,19 +11,17 @@ import { verifyToken, authorizeRoles } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// 1. Todas las rutas requieren login
+// 1. Todas las rutas requieren autenticación
 router.use(verifyToken);
 
-// 2. LECTURA: todos pueden ver productos (incluido proveedor)
-router.get('/', authorizeRoles(['admin', 'gerente', 'empleado', 'proveedor']), getProductos);
-router.get('/:id', authorizeRoles(['admin', 'gerente', 'empleado', 'proveedor']), getProductoById);
+// 2. LECTURA: permitida para admin, gerente, empleado y proveedor
+router.get('/', authorizeRoles('admin', 'gerente', 'empleado', 'proveedor'), getProductos);
+router.get('/:id', authorizeRoles('admin', 'gerente', 'empleado', 'proveedor'), getProductoById);
 
 // 3. ESCRITURA: solo admin, gerente y empleado
-router.use(authorizeRoles(['admin', 'gerente', 'empleado']));
-
-router.post('/', createProducto);
-router.put('/:id', updateProducto);
-router.put('/:id/stock', updateStock);
-router.delete('/:id', deleteProducto);
+router.post('/', authorizeRoles('admin', 'gerente', 'empleado'), createProducto);
+router.put('/:id', authorizeRoles('admin', 'gerente', 'empleado'), updateProducto);
+router.put('/:id/stock', authorizeRoles('admin', 'gerente', 'empleado'), updateStock);
+router.delete('/:id', authorizeRoles('admin', 'gerente', 'empleado'), deleteProducto);
 
 export default router;
